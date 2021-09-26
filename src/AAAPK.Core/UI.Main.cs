@@ -57,7 +57,7 @@ namespace AAAPK
 				_boneScrollPosition = new Vector2(_posX, _posY);
 			}
 
-			private void DrawMakerWindow(int id)
+			private void DrawMakerWindow(int _windowID)
 			{
 #if KKS
 				GUI.backgroundColor = Color.grey;
@@ -432,7 +432,7 @@ namespace AAAPK
 
 			private void BuildObjectTree(GameObject _gameObject, int indentLevel)
 			{
-				if (_gameObject.name == _boneInicatorName) return;
+				if (_gameObject.name == _boneInicatorName || _gameObject.name.StartsWith("AccGotHigh_")) return;
 
 				if (_searchTerm.Length == 0 || _gameObject.name.IndexOf(_searchTerm, StringComparison.OrdinalIgnoreCase) > -1 || _openedNodes.Contains(_gameObject.transform.parent.gameObject))
 				{

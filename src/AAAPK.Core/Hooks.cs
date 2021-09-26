@@ -36,6 +36,22 @@ namespace AAAPK
 				return false;
 			}
 
+			internal static bool ChaControl_ChangeShakeHair_Prefix(ChaControl __instance, int parts)
+			{
+				if ((bool) __instance.objHair[parts])
+				{
+					DynamicBone[] _cmps = __instance.objHair[parts].GetComponents<DynamicBone>();
+					if (_cmps?.Length > 0)
+					{
+						bool _noShake = Traverse.Create(__instance.fileHair.parts[parts]).Property("noShake").GetValue<bool>();
+						foreach (DynamicBone _cmp in _cmps)
+							_cmp.enabled = !_noShake;
+					}
+				}
+
+				return false;
+			}
+
 			internal static void MaterialAPI_GetRendererList_Postfix(ref IEnumerable<Renderer> __result, GameObject gameObject)
 			{
 				if (gameObject == null)

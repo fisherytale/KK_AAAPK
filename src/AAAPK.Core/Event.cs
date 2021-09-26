@@ -32,6 +32,7 @@ namespace AAAPK
 
 			_pluginCtrl.UpdatePartsInfoList();
 			_pluginCtrl.RefreshCache();
+			_pluginCtrl.StartCoroutine(ToggleButtonVisibility());
 		}
 
 		internal static void OnChangeCoordinateType_Coroutine(ChaControl _chaCtrl)

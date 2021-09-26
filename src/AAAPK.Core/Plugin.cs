@@ -37,7 +37,7 @@ namespace AAAPK
 	{
 		public const string GUID = "madevil.kk.AAAPK";
 		public const string Name = "AAAPK";
-		public const string Version = "1.4.0.0";
+		public const string Version = "1.4.1.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -118,6 +118,7 @@ namespace AAAPK
 			if (JetPack.Game.HasDarkness)
 			{
 				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeAccessory", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeAccessory_Prefix)));
+				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeHair", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeHair_Prefix)));
 
 				if (JetPack.MoreAccessories.Installed)
 				{
@@ -213,10 +214,9 @@ namespace AAAPK
 
 				if (_args.TopIndex == 4)
 				{
-					int _slotIndex = _args.SideToggle.GetComponentInChildren<CvsAccessory>(true).SlotIndex();
 					_charaConfigWindow._onAccTab = true;
 					StartCoroutine(ToggleButtonVisibility());
-					if (_pluginCtrl.GetSlotRule(_slotIndex) != null)
+					if (_pluginCtrl.GetSlotRule(JetPack.CharaMaker.CurrentAccssoryIndex) != null)
 						_pluginCtrl.ApplyParentRuleList("OnCvsNavMenuClick");
 
 					if (_args.SideToggle?.GetComponentInChildren<CvsAccessory>(true) == null)
