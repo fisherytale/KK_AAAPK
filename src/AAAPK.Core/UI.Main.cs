@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -430,9 +431,11 @@ namespace AAAPK
 				Traverse.Create(GetBoneController(_chaCtrl)).Property("NeedsBaselineUpdate").SetValue(true);
 			}
 
+			private static HashSet<string> _ignoreList = new HashSet<string>() { _boneInicatorName, "BendUrAcc_indicator" };
+
 			private void BuildObjectTree(GameObject _gameObject, int indentLevel)
 			{
-				if (_gameObject.name == _boneInicatorName || _gameObject.name.StartsWith("AccGotHigh_")) return;
+				if (_ignoreList.Contains(_gameObject.name) || _gameObject.name.StartsWith("AccGotHigh_")) return;
 
 				if (_searchTerm.Length == 0 || _gameObject.name.IndexOf(_searchTerm, StringComparison.OrdinalIgnoreCase) > -1 || _openedNodes.Contains(_gameObject.transform.parent.gameObject))
 				{
@@ -450,8 +453,8 @@ namespace AAAPK
 					else
 						indentLevel = 0;
 
-					if (_gameObject.transform.childCount == 1 && _gameObject.transform.GetChild(0).name == _boneInicatorName)
-                    {
+					if (_gameObject.transform.childCount > 0 && _gameObject.transform.Cast<Transform>().Where(x => _ignoreList.Contains(x.name)).Count() == _gameObject.transform.childCount)
+					{
 						GUILayout.Space(19);
 					}
 					else if (_gameObject.transform.childCount > 0)

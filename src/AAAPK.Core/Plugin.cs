@@ -33,11 +33,14 @@ namespace AAAPK
 #if KK
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
 #endif
+	[BepInIncompatibility("KK_ClothesLoadOption")]
+	[BepInIncompatibility("com.jim60105.kk.studiocoordinateloadoption")]
+	[BepInIncompatibility("com.jim60105.kk.coordinateloadoption")]
 	public partial class AAAPK : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.AAAPK";
 		public const string Name = "AAAPK";
-		public const string Version = "1.4.2.0";
+		public const string Version = "1.4.3.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -120,7 +123,7 @@ namespace AAAPK
 				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeAccessory", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeAccessory_Prefix)));
 				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeHair", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeHair_Prefix)));
 
-				if (JetPack.MoreAccessories.Installed)
+				if (JetPack.MoreAccessories.Installed && !JetPack.MoreAccessories.BuggyBootleg)
 				{
 					_hooksInstance.Patch(JetPack.MoreAccessories.Instance.GetType().Assembly.GetType("MoreAccessoriesKOI.ChaControl_ChangeShakeAccessory_Patches").GetMethod("Prefix", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ReturnFalse)));
 				}
