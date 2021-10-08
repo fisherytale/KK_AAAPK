@@ -82,11 +82,17 @@ namespace AAAPK
 			private bool _initStyle = true;
 
 			private GUIStyle _windowSolid;
+			private GUIStyle _labelBoldOrange;
 
 			private void InitStyle()
 			{
 				_windowSolid = new GUIStyle(GUI.skin.window);
 				_windowSolid.normal.background = _windowSolid.onNormal.background;
+
+				_labelBoldOrange = new GUIStyle(GUI.skin.label);
+				_labelBoldOrange.normal.textColor = new Color(1, 0.7f, 0, 1);
+				_labelBoldOrange.fontStyle = FontStyle.Bold;
+
 				_initStyle = false;
 			}
 

@@ -34,13 +34,15 @@ namespace AAAPK
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
 #endif
 	[BepInIncompatibility("KK_ClothesLoadOption")]
+#if !DEBUG
 	[BepInIncompatibility("com.jim60105.kk.studiocoordinateloadoption")]
 	[BepInIncompatibility("com.jim60105.kk.coordinateloadoption")]
+#endif
 	public partial class AAAPK : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.AAAPK";
 		public const string Name = "AAAPK";
-		public const string Version = "1.4.3.0";
+		public const string Version = "1.4.4.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -113,6 +115,13 @@ namespace AAAPK
 
 		private void Start()
 		{
+#if KK && !DEBUG
+			if (JetPack.MoreAccessories.BuggyBootleg)
+			{
+				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
+				return;
+			}
+#endif
 			CharacterApi.RegisterExtraBehaviour<AAAPKController>(ExtDataKey);
 			Harmony _hooksInstance = Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
 #if KKS
@@ -201,6 +210,7 @@ namespace AAAPK
 
 				_accWinCtrlEnable = MakerAPI.AddAccessoryWindowControl(new MakerButton("AAAPK", null, _instance));
 				_accWinCtrlEnable.OnClick.AddListener(() => _charaConfigWindow.enabled = true);
+				_accWinCtrlEnable.GroupingID = "Madevil";
 				_accWinCtrlEnable.Visible.OnNext(false);
 			};
 
