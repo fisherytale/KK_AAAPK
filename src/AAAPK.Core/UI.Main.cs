@@ -106,7 +106,7 @@ namespace AAAPK
 					{
 						if (_currentSlotRule == null)
 							GUI.enabled = false;
-						if (GUILayout.Button("Warp", _gloButtonS))
+						if (GUILayout.Button(new GUIContent("Warp", ""), _gloButtonS))
 						{
 							_searchTerm = "";
 
@@ -123,7 +123,7 @@ namespace AAAPK
 
 						if (_currentSlotRule == null)
 							GUI.enabled = false;
-						if (GUILayout.Button("Clear", _gloButtonS))
+						if (GUILayout.Button(new GUIContent("Clear", "Remove slot rule"), _gloButtonS))
 						{
 							_pluginCtrl.RemoveRule(_currentSlotIndex);
 							//RefreshCoordinate();
@@ -142,6 +142,11 @@ namespace AAAPK
 							GameObject _parentNode = _chaCtrl.GetReferenceInfo((ChaReference.RefObjKey) Enum.Parse(typeof(ChaReference.RefObjKey), _parentKey));
 							//_currentSlotGameObject.transform.SetParent(_parentNode.transform, false);
 							ResetParentWithScale(_parentNode);
+						}
+						if (GUILayout.Button(new GUIContent("Reset", "Remove slot rule without keeping pos/rot/scale"), _gloButtonS))
+						{
+							_pluginCtrl.RemoveRule(_currentSlotIndex);
+							RefreshCoordinate();
 						}
 						GUI.enabled = true;
 						if (_currentSlotRule != null)
@@ -334,8 +339,14 @@ namespace AAAPK
 						_cfgKeepPos = GUILayout.Toggle(_cfgKeepPos, new GUIContent(" keep position", "Preserve position on changing parent"));
 						_cfgKeepRot = GUILayout.Toggle(_cfgKeepRot, new GUIContent(" keep rotation", "Preserve rotation on changing parent"));
 
-						bool _showIndicator = _cfgShowInicator;
-						if (_showIndicator != GUILayout.Toggle(_cfgShowInicator, new GUIContent(" indicator", "Show a indicator of selected node")))
+						GUILayout.FlexibleSpace();
+					}
+					GUILayout.EndHorizontal();
+
+					GUILayout.BeginHorizontal(GUI.skin.box);
+					{
+						bool _newIndicator = _cfgShowInicator;
+						if (_newIndicator != GUILayout.Toggle(_cfgShowInicator, new GUIContent(" indicator", "Show a indicator of selected node")))
 						{
 							if (_boneInicator == null)
 							{
@@ -348,6 +359,14 @@ namespace AAAPK
 							}
 						}
 
+						bool _newRemoveUnassigned = _cfgRemoveUnassigned;
+						if (_newRemoveUnassigned != GUILayout.Toggle(_cfgRemoveUnassigned, new GUIContent(" remove unassigned", "Remove settings for unassigned slot")))
+						{
+							_cfgRemoveUnassigned = !_cfgRemoveUnassigned;
+							if (_cfgRemoveUnassignedPart.Value != _cfgRemoveUnassigned)
+								_cfgRemoveUnassignedPart.Value = _cfgRemoveUnassigned;
+						}
+
 						GUILayout.FlexibleSpace();
 					}
 					GUILayout.EndHorizontal();
@@ -355,11 +374,6 @@ namespace AAAPK
 					GUILayout.BeginHorizontal(GUI.skin.box);
 					{
 #if DEBUG
-						if (GUILayout.Button("Panic", _gloButtonM))
-						{
-							foreach (ListInfoComponent _cmp in _chaCtrl.GetComponentsInChildren<ListInfoComponent>(true))
-								Destroy(_cmp?.gameObject);
-						}
 						if (GUILayout.Button(new GUIContent("Refresh", "Refresh Dynamic Bone"), _gloButtonM))
 						{
 							Traverse.Create(GetBoneController(_chaCtrl)).Property("NeedsBaselineUpdate").SetValue(true);
@@ -374,6 +388,11 @@ namespace AAAPK
 						{
 							foreach (DynamicBone _cmp in _chaCtrl.GetComponentsInChildren<DynamicBone>().Where(x => x.m_Root != null && (bool)!x.gameObject?.name.StartsWith("ca_slot")).ToList())
 								_logger.LogInfo(_cmp.m_Root.name);
+						}
+
+						if (GUILayout.Button(new GUIContent("Reapply", "Try to reapply settings (might be useful after failed)"), _gloButtonM))
+						{
+							_pluginCtrl.ApplyParentRuleList("ManualRefresh");
 						}
 
 						GUILayout.FlexibleSpace();

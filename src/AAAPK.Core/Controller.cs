@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -89,6 +90,7 @@ namespace AAAPK
 						}
 					}
 				}
+				RefreshCache();
 				StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				base.OnCoordinateBeingLoaded(coordinate);
 			}
@@ -97,8 +99,8 @@ namespace AAAPK
 			{
 				yield return JetPack.Toolbox.WaitForEndOfFrame;
 				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				RefreshCache();
 				_duringLoadChange = false;
+				UpdatePartsInfoList();
 			}
 
 			protected override void OnReload(GameMode currentGameMode)
@@ -122,6 +124,7 @@ namespace AAAPK
 					}
 				}
 				RefreshCache();
+				StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				base.OnReload(currentGameMode);
 			}
 
@@ -230,12 +233,20 @@ namespace AAAPK
 					else if (_rule.ParentType == ParentType.Accessory)
 					{
 						GameObject _parentNodeGameObject = _objAccessories.FirstOrDefault(x => x.name == $"ca_slot{_rule.ParentSlot:00}");
-						if (_parentNodeGameObject?.GetComponent(ChaAccessoryClothes) != null)
+						if (_parentNodeGameObject != null && _parentNodeGameObject?.GetComponent(ChaAccessoryClothes) != null)
 						{
 							DebugMsg(LogLevel.Error, $"[ApplyParentRuleListCoroutine][Slot{_slotIndex + 1:00}] Cannot use this function on Accessory Clothes");
 							_queueSlots.Remove(_slotIndex);
 							continue;
 						}
+						if (_parentNodeGameObject == null)
+						{
+							_logger.LogMessage($"Slot{_slotIndex + 1:00} parent slot not found [{_rule.ParentType}][{_rule.ParentSlot}]");
+							_logger.LogError($"[ApplyParentRuleListCoroutine][Slot{_slotIndex + 1:00}] parent slot not found\n{JSONSerializer.Serialize(_rule.GetType(), _rule, true)}");
+							_queueSlots.Remove(_slotIndex);
+							continue;
+						}
+
 						_parentNode = _parentNodeGameObject?.transform?.Find(_rule.ParentPath);
 					}
 					else if (_rule.ParentType == ParentType.Hair)
@@ -254,6 +265,8 @@ namespace AAAPK
 						_queueSlots.Remove(_slotIndex);
 						continue;
 					}
+
+					Hooks.ChaControl_ChangeShakeAccessory_Prefix(ChaControl, _slotIndex);
 
 					_ca_slot.transform.SetParent(_parentNode, false);
 					_ca_slot.transform.localPosition = Vector3.zero;
@@ -344,17 +357,18 @@ namespace AAAPK
 					_logger.LogMessage($"[ExportRules] no rule to export");
 					return;
 				}
-				if (!Directory.Exists(_savePath))
-					Directory.CreateDirectory(_savePath);
-				string _filePath = Path.Combine(_savePath, "AAAPK.json");
+				_data.ForEach(x => x.Coordinate = -1);
+				if (!Directory.Exists(_lastSavePath))
+					Directory.CreateDirectory(_lastSavePath);
+				string _filePath = Path.Combine(_lastSavePath, $"AAAPK_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.json");
 				string _json = JSONSerializer.Serialize(typeof(List<ParentRule>), _data, true);
 				File.WriteAllText(_filePath, _json);
 				_logger.LogMessage($"[ExportRules] {_data?.Count} rule(s) exported to {_filePath}");
 			}
 
-			internal void ImportRules()
+			internal void ImportRules(string _filePath)
 			{
-				string _filePath = Path.Combine(_savePath, "AAAPK.json");
+				//string _filePath = Path.Combine(_lastSavePath, "AAAPK.json");
 				if (!File.Exists(_filePath))
 				{
 					_logger.LogMessage($"[ImportRules] {_filePath} file doesn't exist");

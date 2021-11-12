@@ -19,15 +19,28 @@ namespace AAAPK
 			internal static bool ChaControl_ChangeShakeAccessory_Prefix(ChaControl __instance, int slotNo)
 			{
 				if (__instance == null || slotNo < 0) return true;
+				ChaFileAccessory.PartsInfo _part = JetPack.Accessory.GetPartsInfo(__instance, slotNo);
+				if (_part == null || _part.type == 120) return false;
 				GameObject _ca_slot = JetPack.Accessory.GetObjAccessory(__instance, slotNo);
-				if (_ca_slot == null) return true;
-				DynamicBone[] _cmps = _ca_slot.GetComponents<DynamicBone>();
+				if (_ca_slot == null)
+				{
+					_logger.LogError($"[ChaControl_ChangeShakeAccessory_Prefix] ca_slot{slotNo:00} is null");
+					return false;
+				}
+				DynamicBone[] _cmps = _ca_slot.GetComponentsInChildren<DynamicBone>(true);
 				if (_cmps?.Length > 0)
 				{
-					ChaFileAccessory.PartsInfo _part = JetPack.Accessory.GetPartsInfo(__instance, slotNo);
-					bool _noShake = Traverse.Create(_part).Property("noShake").GetValue<bool>();
+					bool _noShake = _part.noShake;
 					foreach (DynamicBone _cmp in _cmps)
 					{
+						if (_cmp == null) continue;
+						if (_cmp.gameObject != _ca_slot)
+						{
+							GameObject _parent = _cmp.GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault()?.gameObject;
+							if (_parent != null && _parent != _ca_slot)
+								continue;
+						}
+
 						if (_cmp.m_Root != null)
 							_cmp.enabled = !_noShake;
 					}
@@ -38,14 +51,27 @@ namespace AAAPK
 
 			internal static bool ChaControl_ChangeShakeHair_Prefix(ChaControl __instance, int parts)
 			{
-				if ((bool) __instance.objHair[parts])
+				if (__instance?.objHair.ElementAtOrDefault(parts) != null)
 				{
-					DynamicBone[] _cmps = __instance.objHair[parts].GetComponents<DynamicBone>();
+					DynamicBone[] _cmps = __instance.objHair[parts].GetComponentsInChildren<DynamicBone>(true);
 					if (_cmps?.Length > 0)
 					{
-						bool _noShake = Traverse.Create(__instance.fileHair.parts[parts]).Property("noShake").GetValue<bool>();
+						if (__instance?.fileHair?.parts?.ElementAtOrDefault(parts) == null) return false;
+
+						bool _noShake = __instance.fileHair.parts[parts].noShake;
 						foreach (DynamicBone _cmp in _cmps)
-							_cmp.enabled = !_noShake;
+						{
+							if (_cmp == null) continue;
+							if (_cmp.gameObject != __instance.objHair[parts])
+							{
+								GameObject _parent = _cmp.GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault()?.gameObject;
+								if (_parent != null && _parent != __instance.objHair[parts])
+									continue;
+							}
+
+							if (_cmp.m_Root != null)
+								_cmp.enabled = !_noShake;
+						}
 					}
 				}
 

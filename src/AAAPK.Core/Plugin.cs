@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 
 using UnityEngine;
+using UniRx;
 using ChaCustom;
 
 using BepInEx;
@@ -41,8 +42,12 @@ namespace AAAPK
 	public partial class AAAPK : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.AAAPK";
+#if DEBUG
+		public const string Name = "AAAPK (Debug Build)";
+#else
 		public const string Name = "AAAPK";
-		public const string Version = "1.4.4.0";
+#endif
+		public const string Version = "1.5.0.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -56,11 +61,13 @@ namespace AAAPK
 		internal static ConfigEntry<bool> _cfgMakerWinResScale;
 		internal static ConfigEntry<bool> _cfgRemoveUnassignedPart;
 		internal static ConfigEntry<Color> _cfgBonelyfanColor;
+		internal static ConfigEntry<string> _cfgExportPath;
 
 		internal static MakerButton _accWinCtrlEnable;
+		internal static MakerToggle _tglRemoveUnassigned;
 		internal static string _boneInicatorName = "AAAPK_indicator";
 
-		private static readonly string _savePath = Path.Combine(Paths.GameRootPath, "Temp");
+		internal static string _lastSavePath;
 		public const int ExtDataVer = 1;
 		public const string ExtDataKey = "madevil.kk.AAAPK";
 		internal static Dictionary<string, Type> _typeList = new Dictionary<string, Type>();
@@ -74,7 +81,18 @@ namespace AAAPK
 
 			_cfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { IsAdvanced = true, Order = 20 }));
 
-			_cfgRemoveUnassignedPart = Config.Bind("Maker", "Remove Unassigned Part", true, new ConfigDescription("Remove rules for missing or unassigned accesseries", null, new ConfigurationManagerAttributes { Order = 20, Browsable = !JetPack.CharaStudio.Running }));
+			_cfgRemoveUnassignedPart = Config.Bind("Maker", "Remove Unassigned Part", false, new ConfigDescription("Remove rules for missing or unassigned accesseries", null, new ConfigurationManagerAttributes { Order = 20, Browsable = !JetPack.CharaStudio.Running }));
+			_cfgRemoveUnassignedPart.SettingChanged += (_sender, _args) =>
+			{
+				if (JetPack.CharaMaker.Loaded)
+					_tglRemoveUnassigned.SetValue(_cfgRemoveUnassignedPart.Value, false);
+
+				if (_charaConfigWindow != null)
+				{
+					if (_charaConfigWindow._cfgRemoveUnassigned != _cfgRemoveUnassignedPart.Value)
+						_charaConfigWindow._cfgRemoveUnassigned = _cfgRemoveUnassignedPart.Value;
+				}
+			};
 
 			_cfgDragPass = Config.Bind("Maker", "Drag Pass Mode", false, new ConfigDescription("Setting window will not block mouse dragging", null, new ConfigurationManagerAttributes { Order = 15, Browsable = !JetPack.CharaStudio.Running }));
 
@@ -111,6 +129,13 @@ namespace AAAPK
 				if (_charaConfigWindow == null || _charaConfigWindow._boneInicator == null) return;
 				_charaConfigWindow._boneInicator.GetComponent<Renderer>().material.SetColor("_Color", _cfgBonelyfanColor.Value);
 			};
+
+			_cfgExportPath = Config.Bind("General", "Export Path", Paths.ConfigPath, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 1 }));
+			_cfgExportPath.SettingChanged += (_sender, _args) =>
+			{
+				_lastSavePath = _cfgExportPath.Value;
+			};
+			_lastSavePath = _cfgExportPath.Value;
 		}
 
 		private void Start()
@@ -119,6 +144,21 @@ namespace AAAPK
 			if (JetPack.MoreAccessories.BuggyBootleg)
 			{
 				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
+				return;
+			}
+#endif
+			if (!JetPack.MoreAccessories.Installed)
+			{
+#if KK
+				if (JetPack.MoreAccessories.BuggyBootleg)
+					_logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
+				return;
+#endif
+			}
+#if KK
+			if (!JetPack.Game.HasDarkness)
+			{
+				_logger.LogError($"This plugin requires Darkness to run");
 				return;
 			}
 #endif
@@ -205,8 +245,19 @@ namespace AAAPK
 				_args.AddControl(new MakerText("OutfitTriggers", _category, this));
 
 				_args.AddControl(new MakerButton("Export", _category, this)).OnClick.AddListener(delegate { GetController(CustomBase.Instance.chaCtrl).ExportRules(); });
-				_args.AddControl(new MakerButton("Import", _category, this)).OnClick.AddListener(delegate { GetController(CustomBase.Instance.chaCtrl).ImportRules(); });
+				_args.AddControl(new MakerButton("Import", _category, this)).OnClick.AddListener(delegate
+				{
+					const string _fileExt = ".json";
+					const string _fileFilter = "Exported Setting (*.json)|*.json|All files|*.*";
+					OpenFileDialog.Show(_string => OnFileAccept(_string), "Open Exported Setting", _lastSavePath, _fileFilter, _fileExt);
+				});
 				_args.AddControl(new MakerButton("Reset", _category, this)).OnClick.AddListener(delegate { GetController(CustomBase.Instance.chaCtrl).ResetRules(); });
+
+				_args.AddControl(new MakerSeparator(_category, this));
+
+				_args.AddControl(new MakerText("Config", _category, this));
+				_tglRemoveUnassigned = _args.AddControl(new MakerToggle(_category, "Remove Unassigned Part", _cfgRemoveUnassignedPart.Value, this));
+				_tglRemoveUnassigned.ValueChanged.Subscribe(_value => _cfgRemoveUnassignedPart.Value = _value);
 
 				_accWinCtrlEnable = MakerAPI.AddAccessoryWindowControl(new MakerButton("AAAPK", null, _instance));
 				_accWinCtrlEnable.OnClick.AddListener(() => _charaConfigWindow.enabled = true);
@@ -250,6 +301,14 @@ namespace AAAPK
 			JetPack.MaterialEditor.OnDataApply += (_sender, _args) => OnDataApply(_args);
 
 			Init_Indicator();
+		}
+
+		internal void OnFileAccept(string[] _string)
+		{
+			if (_string == null || _string.Length == 0 || _string[0].IsNullOrEmpty()) return;
+			_lastSavePath = new FileInfo(_string[0]).Directory.FullName;
+			GetController(CustomBase.Instance.chaCtrl).ImportRules(_string[0]);
+			_logger.LogMessage($"Settings loaded from {_string[0]}");
 		}
 
 		internal static IEnumerator ToggleButtonVisibility()

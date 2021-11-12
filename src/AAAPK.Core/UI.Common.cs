@@ -3,8 +3,6 @@
 using UnityEngine;
 using ChaCustom;
 
-using KKAPI.Maker;
-
 namespace AAAPK
 {
 	public partial class AAAPK
@@ -21,6 +19,7 @@ namespace AAAPK
 				_windowPos.y = _cfgMakerWinY.Value;
 				_windowBGtex = JetPack.UI.MakePlainTex((int) _windowSize.x, (int) _windowSize.y + 10, _windowBG);
 				_passThrough = _cfgDragPass.Value;
+				_cfgRemoveUnassigned = _cfgRemoveUnassignedPart.Value;
 				_windowRect = new Rect(_windowPos.x, _windowPos.y, _windowSize.x, _windowSize.y);
 				ChangeRes();
 			}
@@ -69,6 +68,7 @@ namespace AAAPK
 			private bool _cfgKeepPos = true;
 			private bool _cfgKeepRot = true;
 			private bool _cfgShowInicator = true;
+			internal bool _cfgRemoveUnassigned = false;
 
 			internal Transform _boneInicator = null;
 
@@ -101,12 +101,11 @@ namespace AAAPK
 				if (!_onAccTab) return;
 				if (CustomBase.Instance?.chaCtrl == null) return;
 				if (CustomBase.Instance.customCtrl.hideFrontUI) return;
-#if KK
-				if (!Manager.Scene.Instance.AddSceneName.IsNullOrEmpty() && Manager.Scene.Instance.AddSceneName != "CustomScene") return;
-#endif
-				if (_currentCoordinateIndex != CustomBase.Instance.chaCtrl.fileStatus.coordinateType)
+				if (JetPack.Toolbox.SceneIsOverlap()) return;
+				if (!JetPack.Toolbox.SceneAddSceneName().IsNullOrEmpty() && JetPack.Toolbox.SceneAddSceneName() != "CustomScene") return;
+				if (_currentCoordinateIndex != _chaCtrl.fileStatus.coordinateType)
 				{
-					_currentCoordinateIndex = CustomBase.Instance.chaCtrl.fileStatus.coordinateType;
+					_currentCoordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					//RefreshSlotInfo();
 					_needRefreshSlotInfo = true;
 				}
