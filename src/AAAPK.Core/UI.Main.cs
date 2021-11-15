@@ -75,6 +75,13 @@ namespace AAAPK
 					CloseWindow();
 				}
 
+				if (GUI.Button(new Rect(_windowSize.x - 50, 4, 23, 23), new GUIContent("0", "Config window will not block mouse drag from outside (experemental)"), (_passThrough ? _buttonActive : GUI.skin.button)))
+				{
+					_passThrough = !_passThrough;
+					_cfgDragPass.Value = _passThrough;
+					_logger.LogMessage($"Pass through mode: {(_passThrough ? "ON" : "OFF")}");
+				}
+
 				if (GUI.Button(new Rect(4, 4, 23, 23), new GUIContent("<", "Reset window position")))
 				{
 					ChangeRes();

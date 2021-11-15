@@ -35,7 +35,7 @@ namespace AAAPK
 			private Texture2D _windowBGtex = null;
 			internal bool _onAccTab = false;
 			private bool _hasFocus = false;
-			private bool _passThrough = false;
+			internal bool _passThrough = false;
 
 			private Vector2 _ScreenRes = Vector2.zero;
 			internal float _cfgScaleFactor = 1f;
@@ -83,6 +83,7 @@ namespace AAAPK
 
 			private GUIStyle _windowSolid;
 			private GUIStyle _labelBoldOrange;
+			private GUIStyle _buttonActive;
 
 			private void InitStyle()
 			{
@@ -92,6 +93,11 @@ namespace AAAPK
 				_labelBoldOrange = new GUIStyle(GUI.skin.label);
 				_labelBoldOrange.normal.textColor = new Color(1, 0.7f, 0, 1);
 				_labelBoldOrange.fontStyle = FontStyle.Bold;
+
+				_buttonActive = new GUIStyle(GUI.skin.button);
+				_buttonActive.normal.textColor = Color.cyan;
+				_buttonActive.hover.textColor = Color.cyan;
+				_buttonActive.fontStyle = FontStyle.Bold;
 
 				_initStyle = false;
 			}
