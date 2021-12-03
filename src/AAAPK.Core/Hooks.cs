@@ -8,6 +8,8 @@ using UnityEngine;
 
 using HarmonyLib;
 
+using JetPack;
+
 namespace AAAPK
 {
 	public partial class AAAPK
@@ -27,23 +29,23 @@ namespace AAAPK
 					_logger.LogError($"[ChaControl_ChangeShakeAccessory_Prefix] ca_slot{slotNo:00} is null");
 					return false;
 				}
-				DynamicBone[] _cmps = _ca_slot.GetComponentsInChildren<DynamicBone>(true);
-				if (_cmps?.Length > 0)
+				ComponentLookupTable _lookup = _ca_slot.GetComponent<ComponentLookupTable>();
+				if (_lookup == null)
 				{
-					bool _noShake = _part.noShake;
-					foreach (DynamicBone _cmp in _cmps)
-					{
-						if (_cmp == null) continue;
-						if (_cmp.gameObject != _ca_slot)
-						{
-							GameObject _parent = _cmp.GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault()?.gameObject;
-							if (_parent != null && _parent != _ca_slot)
-								continue;
-						}
+					_logger.LogError($"[ChaControl_ChangeShakeAccessory_Prefix] ComponentLookupTable at {_ca_slot.name} is null");
+					return false;
+				}
+				List<object> _cmps = _lookup.Components(typeof(DynamicBone));
+				if (_cmps?.Count == 0) return false;
 
-						if (_cmp.m_Root != null)
-							_cmp.enabled = !_noShake;
-					}
+				bool _noShake = _part.noShake;
+
+				foreach (DynamicBone _cmp in _cmps)
+				{
+					if (_cmp == null || _cmp.m_Root == null) continue;
+
+					if (_cmp.m_Root != null)
+						_cmp.enabled = !_noShake;
 				}
 
 				return false;
@@ -51,28 +53,26 @@ namespace AAAPK
 
 			internal static bool ChaControl_ChangeShakeHair_Prefix(ChaControl __instance, int parts)
 			{
-				if (__instance?.objHair.ElementAtOrDefault(parts) != null)
+				if (__instance?.fileHair?.parts?.ElementAtOrDefault(parts) == null) return false;
+				if (__instance?.objHair.ElementAtOrDefault(parts) == null) return false;
+
+				ComponentLookupTable _lookup = __instance.objHair[parts].GetComponent<ComponentLookupTable>();
+				if (_lookup == null)
 				{
-					DynamicBone[] _cmps = __instance.objHair[parts].GetComponentsInChildren<DynamicBone>(true);
-					if (_cmps?.Length > 0)
-					{
-						if (__instance?.fileHair?.parts?.ElementAtOrDefault(parts) == null) return false;
+					_logger.LogError($"[ChaControl_ChangeShakeHair_Prefix] ComponentLookupTable at {__instance.objHair[parts].name} is null");
+					return false;
+				}
 
-						bool _noShake = __instance.fileHair.parts[parts].noShake;
-						foreach (DynamicBone _cmp in _cmps)
-						{
-							if (_cmp == null) continue;
-							if (_cmp.gameObject != __instance.objHair[parts])
-							{
-								GameObject _parent = _cmp.GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault()?.gameObject;
-								if (_parent != null && _parent != __instance.objHair[parts])
-									continue;
-							}
+				List<object> _cmps = _lookup.Components(typeof(DynamicBone));
+				if (_cmps?.Count == 0) return false;
 
-							if (_cmp.m_Root != null)
-								_cmp.enabled = !_noShake;
-						}
-					}
+				bool _noShake = __instance.fileHair.parts[parts].noShake;
+				foreach (DynamicBone _cmp in _cmps)
+				{
+					if (_cmp == null || _cmp.m_Root == null) continue;
+
+					if (_cmp.m_Root != null)
+						_cmp.enabled = !_noShake;
 				}
 
 				return false;
@@ -80,18 +80,17 @@ namespace AAAPK
 
 			internal static void MaterialAPI_GetRendererList_Postfix(ref IEnumerable<Renderer> __result, GameObject gameObject)
 			{
-				if (gameObject == null)
-					return;
+				if (gameObject == null) return;
+				ComponentLookupTable _lookup = gameObject.GetComponent<ComponentLookupTable>();
+				if (_lookup == null) return;
 
-				List<Renderer> _filter = __result.ToList();
-				foreach (GameObject _gameObject in ListObjAccessory(gameObject))
+				List<Renderer> _filter = new List<Renderer>();
+				_filter.AddRange(_lookup.Components<Renderer>());
+
+				if (gameObject.name == "ct_clothesTop" && gameObject.transform.Find("ct_top_parts_A") != null)
 				{
-					if (_gameObject == gameObject)
-						continue;
-
-					List<Renderer> _remove = _gameObject.GetComponentsInChildren<Renderer>(true)?.ToList();
-					if (_remove?.Count > 0)
-						_filter.RemoveAll(x => _remove.Contains(x));
+					foreach (Transform _child in gameObject.transform)
+						_filter.AddRange(_child.GetComponent<ComponentLookupTable>().Components<Renderer>());
 				}
 
 				__result = _filter.AsEnumerable();
@@ -111,85 +110,27 @@ namespace AAAPK
 						new CodeMatch(OpCodes.Callvirt, operand: _getComponentsInChildrenMethod),
 						new CodeMatch(OpCodes.Stloc_S))
 					.Advance(1)
-					.InsertAndAdvance(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Hooks), nameof(CharaController_ApplyData_Method))));
+					.InsertAndAdvance(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Hooks), nameof(Hooks.CharaController_ApplyData_Method))));
 
 				_codeMatcher.ReportFailure(MethodBase.GetCurrentMethod(), error => _logger.LogError(error));
-#if DEBUG
-				System.IO.File.WriteAllLines($"{nameof(CharaController_ApplyData_Transpiler)}.txt", _codeMatcher.Instructions().Select(x => x.ToString()).ToArray());
-#endif
 				return _codeMatcher.Instructions();
 			}
 
 			internal static DynamicBone[] CharaController_ApplyData_Method(DynamicBone[] _getFromStack)
 			{
-				List<DynamicBone> _result = _getFromStack == null ? new List<DynamicBone>() : _getFromStack.Where(x => x.m_Root != null).ToList();
+				DynamicBone[] _result = _getFromStack == null ? new DynamicBone[0] : _getFromStack.Where(x => x != null && x.m_Root != null).ToArray();
+				if (_result?.Length == 0) return _result;
 
-				if (_result?.Count == 0)
-					return _result.ToArray();
+				ListInfoComponent[] _cmps = _result[0].GetComponentsInParent<ListInfoComponent>(true);
+				if (_cmps?.Length == 0) return _result;
 
-				ChaControl _chaCtrl = _result[0].GetComponentsInParent<ChaControl>(true)?.FirstOrDefault();
-				GameObject _ca_slot = _result[0].GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault().gameObject;
-
-				foreach (GameObject _gameObject in ListObjAccessory(_ca_slot))
+				foreach (ListInfoComponent _cmp in _cmps)
 				{
-					if (_gameObject == _ca_slot) continue;
-					List<DynamicBone> _remove = _gameObject.GetComponentsInChildren<DynamicBone>(true)?.Where(x => x.m_Root != null).ToList();
+					ComponentLookupTable _lookup = _cmp.GetComponent<ComponentLookupTable>();
+					if (_lookup == null) continue;
 
-					if (_remove?.Count > 0)
-						_result.RemoveAll(x => _remove.Contains(x));
-				}
-				if (_result?.Count > 0)
-					_result.RemoveAll(x => x.m_Root.name.StartsWith("cf_j_sk_") || x.m_Root.name.StartsWith("cf_d_sk_"));
-
-				return _result.ToArray();
-			}
-
-			internal static IEnumerable<CodeInstruction> UI_ShowUI_Transpiler(IEnumerable<CodeInstruction> _instructions)
-			{
-				MethodInfo _toListMethod = AccessTools.Method(typeof(Enumerable), nameof(Enumerable.ToList), generics: new Type[] { typeof(DynamicBone) });
-				if (_toListMethod == null)
-				{
-					_logger.LogError("Failed to get methodinfo for System.Linq.Enumerable.ToList<DynamicBone>, UI_ShowUI_Transpiler will not patch");
-					return _instructions;
-				}
-
-				CodeMatcher _codeMatcher = new CodeMatcher(_instructions)
-					.MatchForward(useEnd: false,
-						new CodeMatch(OpCodes.Call, operand: _toListMethod),
-						new CodeMatch(OpCodes.Stloc_2),
-						new CodeMatch(OpCodes.Ldloc_2))
-					.Advance(1)
-					.InsertAndAdvance(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Hooks), nameof(UI_ShowUI_Method))));
-
-				_codeMatcher.ReportFailure(MethodBase.GetCurrentMethod(), error => _logger.LogError(error));
-#if DEBUG
-				System.IO.File.WriteAllLines($"{nameof(UI_ShowUI_Transpiler)}.txt", _codeMatcher.Instructions().Select(x => x.ToString()).ToArray());
-#endif
-				return _codeMatcher.Instructions();
-			}
-
-			internal static List<DynamicBone> UI_ShowUI_Method(List<DynamicBone> _getFromStack)
-			{
-				List<DynamicBone> _result = _getFromStack.ToList();
-
-				if (_result.Count == 0)
-					return _getFromStack;
-
-				ChaControl _chaCtrl = _result[0].GetComponentsInParent<ChaControl>(true)?.FirstOrDefault();
-				GameObject _ca_slot = _result[0].GetComponentsInParent<ListInfoComponent>(true)?.FirstOrDefault().gameObject;
-
-				if (_result.Count > 0)
-				{
-					foreach (GameObject _gameObject in ListObjAccessory(_ca_slot))
-					{
-						if (_gameObject == _ca_slot) continue;
-						List<DynamicBone> _remove = _gameObject.GetComponentsInChildren<DynamicBone>(true)?.Where(x => x.m_Root != null).ToList();
-
-						if (_remove?.Count > 0)
-							_result.RemoveAll(x => _remove.Contains(x));
-					}
-					if (_result?.Count > 0)
-						_result.RemoveAll(x => x.m_Root.name.StartsWith("cf_j_sk_") || x.m_Root.name.StartsWith("cf_d_sk_"));
+					if (_lookup.Components<DynamicBone>().Contains(_result[0]))
+						return _lookup.Components<DynamicBone>().Where(x => x.m_Root != null && !x.m_Root.name.StartsWith("cf_j_sk_") && !x.m_Root.name.StartsWith("cf_d_sk_")).ToArray();
 				}
 
 				return _result;

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 
 using UnityEngine;
 using ChaCustom;
@@ -9,6 +11,7 @@ using HarmonyLib;
 
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
+using JetPack;
 
 namespace AAAPK
 {
@@ -198,36 +201,69 @@ namespace AAAPK
 
 			internal static bool UI_ToggleButtonVisibility_Prefix()
 			{
-				if (!MakerAPI.InsideMaker || CustomBase.Instance?.chaCtrl == null)
-					return true;
+				if (!MakerAPI.InsideMaker || CustomBase.Instance?.chaCtrl == null) return true;
 
 				MakerButton DynamicBoneEditorButton = Traverse.Create(DynamicBoneEditorUI).Field("DynamicBoneEditorButton").GetValue<MakerButton>();
-
-				if (DynamicBoneEditorButton == null)
-					return true;
+				if (DynamicBoneEditorButton == null) return false;
 
 				GameObject _ca_slot = GetObjAccessory(CustomBase.Instance.chaCtrl, AccessoriesApi.SelectedMakerAccSlot);
 				if (_ca_slot == null)
-					return true;
-
-				List<DynamicBone> _result = _ca_slot.GetComponentsInChildren<DynamicBone>(true)?.Where(x => x.m_Root != null).ToList();
-				if (_result?.Count > 0)
 				{
-					foreach (GameObject _gameObject in ListObjAccessory(_ca_slot))
-					{
-						if (_gameObject == _ca_slot) continue;
-						List<DynamicBone> _remove = _gameObject.GetComponentsInChildren<DynamicBone>(true)?.Where(x => x.m_Root != null).ToList();
-
-						if (_remove?.Count > 0)
-							_result.RemoveAll(x => _remove.Contains(x));
-					}
-					if (_result?.Count > 0)
-						_result.RemoveAll(x => x.m_Root.name.StartsWith("cf_j_sk_") || x.m_Root.name.StartsWith("cf_d_sk_"));
+					DynamicBoneEditorButton.Visible.OnNext(false);
+					return false;
 				}
 
-				DynamicBoneEditorButton.Visible.OnNext(_result?.Count > 0);
+				ComponentLookupTable _lookup = _ca_slot.GetComponent<ComponentLookupTable>();
+				if (_lookup == null || _lookup.Components<DynamicBone>().Count == 0)
+				{
+					DynamicBoneEditorButton.Visible.OnNext(false);
+					return false;
+				}
+
+				DynamicBoneEditorButton.Visible.OnNext(_lookup.Components<DynamicBone>().Where(x => x.m_Root != null && !x.m_Root.name.StartsWith("cf_j_sk_") && !x.m_Root.name.StartsWith("cf_d_sk_")).Count() > 0);
 
 				return false;
+			}
+
+			internal static IEnumerable<CodeInstruction> UI_ShowUI_Transpiler(IEnumerable<CodeInstruction> _instructions)
+			{
+				MethodInfo _toListMethod = AccessTools.Method(typeof(Enumerable), nameof(Enumerable.ToList), generics: new Type[] { typeof(DynamicBone) });
+				if (_toListMethod == null)
+				{
+					_logger.LogError("Failed to get methodinfo for System.Linq.Enumerable.ToList<DynamicBone>, UI_ShowUI_Transpiler will not patch");
+					return _instructions;
+				}
+
+				CodeMatcher _codeMatcher = new CodeMatcher(_instructions)
+					.MatchForward(useEnd: false,
+						new CodeMatch(OpCodes.Call, operand: _toListMethod),
+						new CodeMatch(OpCodes.Stloc_2),
+						new CodeMatch(OpCodes.Ldloc_2))
+					.Advance(1)
+					.InsertAndAdvance(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HooksMaker), nameof(HooksMaker.UI_ShowUI_Method))));
+
+				_codeMatcher.ReportFailure(MethodBase.GetCurrentMethod(), error => _logger.LogError(error));
+				return _codeMatcher.Instructions();
+			}
+
+			internal static List<DynamicBone> UI_ShowUI_Method(List<DynamicBone> _getFromStack)
+			{
+				List<DynamicBone> _result = _getFromStack.Where(x => x != null && x.m_Root != null).ToList();
+				if (_result.Count == 0) return _getFromStack;
+
+				ListInfoComponent[] _cmps = _result[0].GetComponentsInParent<ListInfoComponent>(true);
+				if (_cmps?.Length == 0) return _result;
+
+				foreach (ListInfoComponent _cmp in _cmps)
+				{
+					ComponentLookupTable _lookup = _cmp.GetComponent<ComponentLookupTable>();
+					if (_lookup == null) continue;
+
+					if (_lookup.Components<DynamicBone>().Contains(_result[0]))
+						return _lookup.Components<DynamicBone>().Where(x => x.m_Root != null && !x.m_Root.name.StartsWith("cf_j_sk_") && !x.m_Root.name.StartsWith("cf_d_sk_")).ToList();
+				}
+
+				return _result;
 			}
 		}
 	}

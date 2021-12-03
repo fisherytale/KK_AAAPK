@@ -47,7 +47,7 @@ namespace AAAPK
 #else
 		public const string Name = "AAAPK";
 #endif
-		public const string Version = "1.5.0.0";
+		public const string Version = "1.6.0.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -187,15 +187,25 @@ namespace AAAPK
 			}
 
 			{
+				string _version = "2.1";
 				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.MovUrAcc");
-				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, "1.9.0.0"))
-					_logger.LogError($"MovUrAcc 1.9+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
+				{
+					_logger.LogError($"MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+					if (!JetPack.Game.ConsoleActive)
+						_logger.LogMessage($"[{Name}] MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+				}
 			}
 
 			{
+				string _version = "1.4";
 				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.ca");
-				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, "1.4.0.0"))
-					_logger.LogError($"Character Accessory 1.4+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
+				{
+					_logger.LogError($"Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+					if (!JetPack.Game.ConsoleActive)
+						_logger.LogMessage($"[{Name}] Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+				}
 			}
 
 			{
@@ -209,7 +219,7 @@ namespace AAAPK
 				if (_instance != null)
 				{
 					DynamicBoneEditorUI = _instance.GetType().Assembly.GetType("KK_Plugins.DynamicBoneEditor.UI");
-					_hooksInstance.Patch(DynamicBoneEditorUI.GetMethod("ShowUI", AccessTools.all, null, new[] { typeof(int) }, null), transpiler: new HarmonyMethod(typeof(Hooks), nameof(Hooks.UI_ShowUI_Transpiler)));
+					_hooksInstance.Patch(DynamicBoneEditorUI.GetMethod("ShowUI", AccessTools.all, null, new[] { typeof(int) }, null), transpiler: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.UI_ShowUI_Transpiler)));
 					_hooksInstance.Patch(DynamicBoneEditorUI.GetMethod("ToggleButtonVisibility", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.UI_ToggleButtonVisibility_Prefix)));
 
 					Type CharaController = _instance.GetType().Assembly.GetType("KK_Plugins.DynamicBoneEditor.CharaController");

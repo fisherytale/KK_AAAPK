@@ -9,6 +9,8 @@ using ChaCustom;
 using BepInEx.Logging;
 using HarmonyLib;
 
+using JetPack;
+
 namespace AAAPK
 {
 	public partial class AAAPK
@@ -393,8 +395,14 @@ namespace AAAPK
 
 						if (GUILayout.Button(new GUIContent("List DB", "List hair and clothing (exclude acc) DB to console"), _gloButtonM))
 						{
-							foreach (DynamicBone _cmp in _chaCtrl.GetComponentsInChildren<DynamicBone>().Where(x => x.m_Root != null && (bool)!x.gameObject?.name.StartsWith("ca_slot")).ToList())
-								_logger.LogInfo(_cmp.m_Root.name);
+							foreach (ComponentLookupTable _lookup in _chaCtrl.GetComponentsInChildren<ComponentLookupTable>()?.Where(x => x.GetComponent<ChaAccessoryComponent>() == null && x.Components<DynamicBone>().Count == 0))
+							{
+								foreach (DynamicBone _cmp in _lookup.Components<DynamicBone>())
+								{
+									if (_cmp != null && _cmp.m_Root != null)
+										_logger.LogInfo(_cmp.m_Root.name);
+								}
+							}
 						}
 
 						if (GUILayout.Button(new GUIContent("Reapply", "Try to reapply settings (might be useful after failed)"), _gloButtonM))
@@ -413,7 +421,7 @@ namespace AAAPK
 					if (JetPack.MoreAccessories.BuggyBootleg)
 					{
 						GUILayout.BeginHorizontal(GUI.skin.box);
-						GUILayout.TextArea("MoreAccessories experimental build detected\nThis version is not meant for productive use", _labelBoldOrange);
+						GUILayout.TextArea("MoreAccessories experimental build detected\nThis version is not meant for production use", _labelBoldOrange);
 						GUILayout.EndHorizontal();
 					}
 				}
