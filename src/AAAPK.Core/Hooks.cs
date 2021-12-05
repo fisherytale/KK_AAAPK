@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 
 using UnityEngine;
 
+using BepInEx.Logging;
 using HarmonyLib;
 
 using JetPack;
@@ -26,13 +27,13 @@ namespace AAAPK
 				GameObject _ca_slot = JetPack.Accessory.GetObjAccessory(__instance, slotNo);
 				if (_ca_slot == null)
 				{
-					_logger.LogError($"[ChaControl_ChangeShakeAccessory_Prefix] ca_slot{slotNo:00} is null");
+					DebugMsg(LogLevel.Error, $"[ChaControl_ChangeShakeAccessory_Prefix] ca_slot{slotNo:00} is null");
 					return false;
 				}
 				ComponentLookupTable _lookup = _ca_slot.GetComponent<ComponentLookupTable>();
 				if (_lookup == null)
 				{
-					_logger.LogError($"[ChaControl_ChangeShakeAccessory_Prefix] ComponentLookupTable at {_ca_slot.name} is null");
+					DebugMsg(LogLevel.Error, $"[ChaControl_ChangeShakeAccessory_Prefix] ComponentLookupTable at {_ca_slot.name} is null");
 					return false;
 				}
 				List<object> _cmps = _lookup.Components(typeof(DynamicBone));
@@ -59,7 +60,7 @@ namespace AAAPK
 				ComponentLookupTable _lookup = __instance.objHair[parts].GetComponent<ComponentLookupTable>();
 				if (_lookup == null)
 				{
-					_logger.LogError($"[ChaControl_ChangeShakeHair_Prefix] ComponentLookupTable at {__instance.objHair[parts].name} is null");
+					DebugMsg(LogLevel.Error, $"[ChaControl_ChangeShakeHair_Prefix] ComponentLookupTable at {__instance.objHair[parts].name} is null");
 					return false;
 				}
 

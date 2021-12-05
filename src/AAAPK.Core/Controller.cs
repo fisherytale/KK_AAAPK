@@ -90,17 +90,7 @@ namespace AAAPK
 						}
 					}
 				}
-				RefreshCache();
-				StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				base.OnCoordinateBeingLoaded(coordinate);
-			}
-
-			private IEnumerator OnCoordinateBeingLoadedCoroutine()
-			{
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				_duringLoadChange = false;
-				UpdatePartsInfoList();
 			}
 
 			protected override void OnReload(GameMode currentGameMode)
@@ -123,8 +113,6 @@ namespace AAAPK
 						}
 					}
 				}
-				RefreshCache();
-				StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				base.OnReload(currentGameMode);
 			}
 
@@ -368,7 +356,6 @@ namespace AAAPK
 
 			internal void ImportRules(string _filePath)
 			{
-				//string _filePath = Path.Combine(_lastSavePath, "AAAPK.json");
 				if (!File.Exists(_filePath))
 				{
 					_logger.LogMessage($"[ImportRules] {_filePath} file doesn't exist");

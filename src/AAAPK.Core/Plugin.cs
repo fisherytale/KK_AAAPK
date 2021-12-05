@@ -47,7 +47,7 @@ namespace AAAPK
 #else
 		public const string Name = "AAAPK";
 #endif
-		public const string Version = "1.6.0.0";
+		public const string Version = "1.6.1.0";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -82,7 +82,7 @@ namespace AAAPK
 			_cfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { IsAdvanced = true, Order = 20 }));
 
 			_cfgRemoveUnassignedPart = Config.Bind("Maker", "Remove Unassigned Part", false, new ConfigDescription("Remove rules for missing or unassigned accesseries", null, new ConfigurationManagerAttributes { Order = 20, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgRemoveUnassignedPart.SettingChanged += (_sender, _args) =>
+			_cfgRemoveUnassignedPart.SettingChanged += delegate
 			{
 				if (JetPack.CharaMaker.Loaded)
 					_tglRemoveUnassigned.SetValue(_cfgRemoveUnassignedPart.Value, false);
@@ -95,42 +95,42 @@ namespace AAAPK
 			};
 
 			_cfgDragPass = Config.Bind("Maker", "Drag Pass Mode", false, new ConfigDescription("Setting window will not block mouse dragging", null, new ConfigurationManagerAttributes { Order = 15, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgDragPass.SettingChanged += (_sender, _args) =>
+			_cfgDragPass.SettingChanged += delegate
 			{
-				if (_charaConfigWindow == null) return;
-				if (_charaConfigWindow._passThrough != _cfgDragPass.Value)
+				if (_charaConfigWindow != null)
 				{
-					_charaConfigWindow._passThrough = _cfgDragPass.Value;
+					if (_charaConfigWindow._passThrough != _cfgDragPass.Value)
+						_charaConfigWindow._passThrough = _cfgDragPass.Value;
 				}
 			};
 
 			_cfgMakerWinX = Config.Bind("Maker", "Config Window Startup X", 525f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 19, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgMakerWinX.SettingChanged += (_sender, _args) =>
+			_cfgMakerWinX.SettingChanged += delegate
 			{
-				if (_charaConfigWindow == null) return;
-				if (_charaConfigWindow._windowPos.x != _cfgMakerWinX.Value)
+				if (_charaConfigWindow != null)
 				{
-					_charaConfigWindow._windowPos.x = _cfgMakerWinX.Value;
+					if (_charaConfigWindow._windowPos.x != _cfgMakerWinX.Value)
+						_charaConfigWindow._windowPos.x = _cfgMakerWinX.Value;
 				}
 			};
 			_cfgMakerWinY = Config.Bind("Maker", "Config Window Startup Y", 80f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 18, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgMakerWinY.SettingChanged += (_sender, _args) =>
+			_cfgMakerWinY.SettingChanged += delegate
 			{
-				if (_charaConfigWindow == null) return;
-				if (_charaConfigWindow._windowPos.y != _cfgMakerWinY.Value)
+				if (_charaConfigWindow != null)
 				{
-					_charaConfigWindow._windowPos.y = _cfgMakerWinY.Value;
+					if (_charaConfigWindow._windowPos.y != _cfgMakerWinY.Value)
+						_charaConfigWindow._windowPos.y = _cfgMakerWinY.Value;
 				}
 			};
 			_cfgMakerWinResScale = Config.Bind("Maker", "Config Window Resolution Adjust", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 17, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgMakerWinResScale.SettingChanged += (_sender, _args) =>
+			_cfgMakerWinResScale.SettingChanged += delegate
 			{
-				if (_charaConfigWindow == null) return;
-				_charaConfigWindow.ChangeRes();
+				if (_charaConfigWindow != null)
+					_charaConfigWindow.ChangeRes();
 			};
 
 			_cfgBonelyfanColor = Config.Bind("Maker", "Indicator Color", new Color(1, 0f, 1f, 1f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 16, Browsable = !JetPack.CharaStudio.Running }));
-			_cfgBonelyfanColor.SettingChanged += (_sender, _args) =>
+			_cfgBonelyfanColor.SettingChanged += delegate
 			{
 				if (_assetSphere == null) return;
 				_assetSphere.GetComponent<Renderer>().material.SetColor("_Color", _cfgBonelyfanColor.Value);
@@ -139,7 +139,7 @@ namespace AAAPK
 			};
 
 			_cfgExportPath = Config.Bind("General", "Export Path", Paths.ConfigPath, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 1 }));
-			_cfgExportPath.SettingChanged += (_sender, _args) =>
+			_cfgExportPath.SettingChanged += delegate
 			{
 				_lastSavePath = _cfgExportPath.Value;
 			};
@@ -283,7 +283,7 @@ namespace AAAPK
 				_accWinCtrlEnable.Visible.OnNext(false);
 			};
 
-			JetPack.CharaMaker.OnMakerExiting += (_sender, _args) =>
+			MakerAPI.MakerExiting += (_sender, _args) =>
 			{
 				_hooksMaker.UnpatchAll(_hooksMaker.Id);
 				_hooksMaker = null;
