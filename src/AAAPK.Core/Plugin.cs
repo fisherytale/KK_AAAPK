@@ -47,7 +47,7 @@ namespace AAAPK
 #else
 		public const string Name = "AAAPK";
 #endif
-		public const string Version = "1.6.1.0";
+		public const string Version = "1.6.1.1";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;

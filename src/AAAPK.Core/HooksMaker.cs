@@ -204,7 +204,7 @@ namespace AAAPK
 				if (!MakerAPI.InsideMaker || CustomBase.Instance?.chaCtrl == null) return true;
 
 				MakerButton DynamicBoneEditorButton = Traverse.Create(DynamicBoneEditorUI).Field("DynamicBoneEditorButton").GetValue<MakerButton>();
-				if (DynamicBoneEditorButton == null) return false;
+				if (DynamicBoneEditorButton == null) return true;
 
 				GameObject _ca_slot = GetObjAccessory(CustomBase.Instance.chaCtrl, AccessoriesApi.SelectedMakerAccSlot);
 				if (_ca_slot == null)
