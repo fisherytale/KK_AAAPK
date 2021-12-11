@@ -35,10 +35,6 @@ namespace AAAPK
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
 #endif
 	[BepInIncompatibility("KK_ClothesLoadOption")]
-#if !DEBUG
-	[BepInIncompatibility("com.jim60105.kk.studiocoordinateloadoption")]
-	[BepInIncompatibility("com.jim60105.kk.coordinateloadoption")]
-#endif
 	public partial class AAAPK : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.AAAPK";
@@ -47,7 +43,7 @@ namespace AAAPK
 #else
 		public const string Name = "AAAPK";
 #endif
-		public const string Version = "1.6.1.2";
+		public const string Version = "1.6.1.3";
 
 		internal static ManualLogSource _logger;
 		internal static Harmony _hooksMaker;
@@ -167,6 +163,12 @@ namespace AAAPK
 			if (!JetPack.Game.HasDarkness)
 			{
 				_logger.LogError($"This plugin requires Darkness to run");
+				return;
+			}
+
+			if (!JetPack.CoordinateLoadOption.Safe)
+			{
+				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with outdated CoordinateLoadOption");
 				return;
 			}
 #endif
