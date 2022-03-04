@@ -3,7 +3,7 @@ using static AAAPK.AAAPK;
 
 [assembly: AssemblyTitle(Name)]
 [assembly: AssemblyCompany("https://github.com/Madevil")]
-[assembly: AssemblyDescription(Name + " (req. JetPack v" + JetPack.Core.Version + ")")]
+[assembly: AssemblyDescription(Name)]
 [assembly: AssemblyProduct(Name)]
 [assembly: AssemblyVersion(Version)]
 [assembly: AssemblyFileVersion(Version)]

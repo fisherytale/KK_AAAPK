@@ -15,7 +15,6 @@ using ExtensibleSaveFormat;
 
 using KKAPI;
 using KKAPI.Chara;
-using JetPack;
 
 namespace AAAPK
 {
@@ -23,7 +22,20 @@ namespace AAAPK
 	{
 		internal static AAAPKController GetController(ChaControl _chaCtrl) => _chaCtrl?.gameObject?.GetComponent<AAAPKController>();
 		internal static CharaCustomFunctionController GetBoneController(ChaControl _chaCtrl) => _chaCtrl?.gameObject?.GetComponent<KKABMX.Core.BoneController>();
-
+		public static object JsonClone(this object _self)
+		{
+			if (_self == null)
+				return null;
+			string _json = JSONSerializer.Serialize(_self.GetType(), _self);
+			return JSONSerializer.Deserialize(_self.GetType(), _json);
+		}
+		public static T JsonClone<T>(this object _self)
+		{
+			if (_self == null)
+				return default(T);
+			string _json = JSONSerializer.Serialize(typeof(T), _self);
+			return (T)JSONSerializer.Deserialize(typeof(T), _json);
+		}
 		public partial class AAAPKController : CharaCustomFunctionController
 		{
 			internal int _currentCoordinateIndex => ChaControl.fileStatus.coordinateType;
@@ -97,10 +109,9 @@ namespace AAAPK
 
 			private IEnumerator OnCoordinateBeingLoadedCoroutine()
 			{
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
 				_duringLoadChange = false;
-				UpdatePartsInfoList();
 			}
 
 			protected override void OnReload(GameMode currentGameMode)
@@ -133,7 +144,6 @@ namespace AAAPK
 
 				if (_dstCoordinateIndex == _currentCoordinateIndex)
 				{
-					UpdatePartsInfoList();
 					RefreshCache();
 					StartCoroutine(ApplyParentRuleListHack("AccessoriesCopiedHandler"));
 				}
@@ -142,8 +152,6 @@ namespace AAAPK
 			internal void AccessoryTransferredHandler(int _srcSlotIndex, int _dstSlotIndex)
 			{
 				CloneRule(_srcSlotIndex, _dstSlotIndex, _currentCoordinateIndex);
-
-				UpdatePartsInfoList();
 				RefreshCache();
 				StartCoroutine(ApplyParentRuleListHack("AccessoryTransferredHandler"));
 			}
@@ -159,8 +167,8 @@ namespace AAAPK
 				if (_duringLoadChange)
 					yield break;
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
 
 				ApplyParentRuleList(_caller);
 			}
@@ -181,8 +189,8 @@ namespace AAAPK
 				if (_duringLoadChange)
 					yield break;
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
 
 				_queueSlots = new HashSet<int>(_triggerSlots);
 
@@ -276,17 +284,6 @@ namespace AAAPK
 				}
 
 				Traverse.Create(GetBoneController(ChaControl)).Property("NeedsBaselineUpdate").SetValue(true);
-			}
-
-			internal void UpdatePartsInfoList()
-			{
-				_listPartsInfo = JetPack.Accessory.ListPartsInfo(ChaControl);
-				_usedSlots.Clear();
-				for (int i = 0; i < _listPartsInfo.Count; i++)
-				{
-					if (_listPartsInfo.ElementAtOrDefault(i)?.type > 120)
-						_usedSlots.Add(i);
-				}
 			}
 
 			internal Transform GetParentNodeGameObject(ParentRule _rule)

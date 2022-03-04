@@ -6,8 +6,6 @@ using MessagePack;
 
 using ExtensibleSaveFormat;
 
-using JetPack;
-
 namespace AAAPK
 {
 	public partial class AAAPK

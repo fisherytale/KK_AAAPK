@@ -23,17 +23,17 @@ using KKAPI.Maker;
 using KKAPI.Maker.UI;
 using KKAPI.Utilities;
 
+using KK_Plugins.MaterialEditor;
+using KK_Plugins.DynamicBoneEditor;
+
 namespace AAAPK
 {
 	[BepInPlugin(GUID, Name, Version)]
 	[BepInDependency(KoikatuAPI.GUID, KoikatuAPI.VersionConst)]
 	[BepInDependency(ExtendedSave.GUID, ExtendedSave.Version)]
-	[BepInDependency("madevil.JetPack", JetPack.Core.Version)]
 	[BepInDependency("KKABMX.Core", KKABMX_Core.Version)]
 	[BepInDependency("com.deathweasel.bepinex.accessoryclothes")]
-#if KK
-	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
-#endif
+
 	[BepInIncompatibility("KK_ClothesLoadOption")]
 	public partial class AAAPK : BaseUnityPlugin
 	{
@@ -80,7 +80,7 @@ namespace AAAPK
 			_cfgRemoveUnassignedPart = Config.Bind("Maker", "Remove Unassigned Part", false, new ConfigDescription("Remove rules for missing or unassigned accesseries", null, new ConfigurationManagerAttributes { Order = 20, Browsable = !JetPack.CharaStudio.Running }));
 			_cfgRemoveUnassignedPart.SettingChanged += delegate
 			{
-				if (JetPack.CharaMaker.Loaded)
+				if (MakerAPI.InsideAndLoaded)
 					_tglRemoveUnassigned.SetValue(_cfgRemoveUnassignedPart.Value, false);
 
 				if (_charaConfigWindow != null)
@@ -144,31 +144,10 @@ namespace AAAPK
 
 		private void Start()
 		{
-#if KK && !DEBUG
-			if (JetPack.MoreAccessories.BuggyBootleg)
-			{
-				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
-				return;
-			}
-#endif
-			if (!JetPack.MoreAccessories.Installed)
-			{
 #if KK
-				if (JetPack.MoreAccessories.BuggyBootleg)
-					_logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
-				return;
-#endif
-			}
-#if KK
-			if (!JetPack.Game.HasDarkness)
+			if (!KoikatuAPI.IsDarkness())
 			{
 				_logger.LogError($"This plugin requires Darkness to run");
-				return;
-			}
-
-			if (!JetPack.CoordinateLoadOption.Safe)
-			{
-				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with outdated CoordinateLoadOption");
 				return;
 			}
 #endif
@@ -177,44 +156,39 @@ namespace AAAPK
 #if KKS
 			InitCardImport();
 #endif
-			if (JetPack.Game.HasDarkness)
+			if (KoikatuAPI.IsDarkness())
 			{
 				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeAccessory", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeAccessory_Prefix)));
 				_hooksInstance.Patch(Type.GetType("ChaControl, Assembly-CSharp").GetMethod("ChangeShakeHair", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_ChangeShakeHair_Prefix)));
-
-				if (JetPack.MoreAccessories.Installed && !JetPack.MoreAccessories.BuggyBootleg)
-				{
-					_hooksInstance.Patch(JetPack.MoreAccessories.Instance.GetType().Assembly.GetType("MoreAccessoriesKOI.ChaControl_ChangeShakeAccessory_Patches").GetMethod("Prefix", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ReturnFalse)));
-				}
 			}
 
-			{
-				string _version = "2.1";
-				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.MovUrAcc");
-				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
-				{
-					_logger.LogError($"MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
-					if (!JetPack.Game.ConsoleActive)
-						_logger.LogMessage($"[{Name}] MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
-				}
-			}
+			//{
+			//	string _version = "2.1";
+			//	BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.MovUrAcc");
+			//	if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
+			//	{
+			//		_logger.LogError($"MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+			//		if (!JetPack.Game.ConsoleActive)
+			//			_logger.LogMessage($"[{Name}] MovUrAcc {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+			//	}
+			//}
 
-			{
-				string _version = "1.4";
-				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.ca");
-				if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
-				{
-					_logger.LogError($"Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
-					if (!JetPack.Game.ConsoleActive)
-						_logger.LogMessage($"[{Name}] Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
-				}
-			}
+			//{
+			//	string _version = "1.4";
+			//	BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.ca");
+			//	if (_instance != null && !JetPack.Toolbox.PluginVersionCompare(_instance, _version))
+			//	{
+			//		_logger.LogError($"Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+			//		if (!JetPack.Game.ConsoleActive)
+			//			_logger.LogMessage($"[{Name}] Character Accessory {_version}+ is required to work properly, version {_instance.Info.Metadata.Version} detected");
+			//	}
+			//}
 
-			{
-				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("com.deathweasel.bepinex.materialeditor");
-				Type MaterialAPI = _instance.GetType().Assembly.GetType("MaterialEditorAPI.MaterialAPI");
-				_hooksInstance.Patch(MaterialAPI.GetMethod("GetRendererList", AccessTools.all, null, new[] { typeof(GameObject) }, null), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.MaterialAPI_GetRendererList_Postfix)));
-			}
+			//{
+			//	BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("com.deathweasel.bepinex.materialeditor");
+			//	Type MaterialAPI = _instance.GetType().Assembly.GetType("MaterialEditorAPI.MaterialAPI");
+			//	_hooksInstance.Patch(MaterialAPI.GetMethod("GetRendererList", AccessTools.all, null, new[] { typeof(GameObject) }, null), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.MaterialAPI_GetRendererList_Postfix)));
+			//}
 
 			{
 				BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("com.deathweasel.bepinex.dynamicboneeditor");

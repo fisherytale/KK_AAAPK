@@ -10,10 +10,7 @@ namespace AAAPK
 		internal static void ChangeParent(ChaControl _chaCtrl, int _slotIndex, GameObject _ca_slot, Transform _parentNode, bool _keepPos = true, bool _keepRot = true, bool _reset = false)
 		{
 			ChaFileAccessory.PartsInfo _part = new ChaFileAccessory.PartsInfo();
-			if (_slotIndex < 20)
-				_part = _chaCtrl.nowCoordinate.accessory.parts[_slotIndex];
-			else
-				_part = JetPack.MoreAccessories.ListNowAccessories(_chaCtrl).ElementAtOrDefault(_slotIndex - 20);
+			_part = _chaCtrl.nowCoordinate.accessory.parts[_slotIndex];
 
 			if (_part == null || _part.type == 120 || _ca_slot == null || _parentNode == null) return;
 

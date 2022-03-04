@@ -7,6 +7,7 @@ using UniRx;
 using BepInEx.Logging;
 
 using KKAPI.Utilities;
+using KKAPI.Studio;
 
 namespace AAAPK
 {
@@ -67,7 +68,8 @@ namespace AAAPK
 
 		internal static void Init_Indicator()
 		{
-			if (JetPack.CharaStudio.Running) return;
+				
+			if (StudioAPI.InsideStudio) return;
 
 			LoadAsset_sphere();
 			LoadAsset_bonelyfans();

@@ -11,7 +11,6 @@ using HarmonyLib;
 
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
-using JetPack;
 
 namespace AAAPK
 {
@@ -31,7 +30,6 @@ namespace AAAPK
 				AAAPKController _pluginCtrl = GetController(_chaCtrl);
 				if (_pluginCtrl == null) return;
 
-				_pluginCtrl.UpdatePartsInfoList();
 				List<GameObject> _objAccessories = ListObjAccessory(_chaCtrl);
 				foreach (int _slot in _pluginCtrl._triggerSlots)
 				{
@@ -99,8 +97,6 @@ namespace AAAPK
 			{
 				AAAPKController _pluginCtrl = GetController(CustomBase.Instance.chaCtrl);
 				if (_pluginCtrl == null) return;
-
-				_pluginCtrl.UpdatePartsInfoList();
 
 				_instance.StartCoroutine(ToggleButtonVisibility());
 
